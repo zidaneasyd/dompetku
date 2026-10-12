@@ -23,3 +23,15 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         button { -webkit-user-select: none; user-select: none; }
+        
+        
+/* Area atas layar PWA */
+header {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Panel yang memenuhi layar */
+.panel {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
