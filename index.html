@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="DompetKu — catat saldo, pemasukan, pengeluaran, dan transfer kas pribadi.">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <title>DompetKu - Kas Pribadi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] } } } }
+    </script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="font-sans text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Toast -->
+    <div id="toast" class="hidden fixed top-16 left-1/2 z-[90] -translate-x-1/2 bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-xl flex items-center space-x-2 max-w-[92%]">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i><span id="toast-text"></span>
+    </div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-30 bg-[#f3f5fa]/90 backdrop-blur w-full">
+        <div class="max-w-md mx-auto px-5 h-14 flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-sm shadow-sm"><i class="fa-solid fa-wallet"></i></div>
+                <span class="font-extrabold text-[17px] tracking-tight text-slate-900" id="header-title">DompetKu</span>
+            </div>
+            <button aria-label="Notifikasi" class="w-9 h-9 flex items-center justify-center rounded-full bg-white text-slate-600 shadow-sm active:scale-95 transition">
+                <i class="fa-regular fa-bell"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 w-full max-w-md mx-auto px-5 pt-1 pb-32">
+
+        <!-- TAB 1: BERANDA -->
+        <section id="tab-1" class="tab-content flex flex-col space-y-4 fade-in">
+
+            <!-- Kartu saldo utama -->
+            <div class="hero rounded-[28px] p-5 text-white relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-12 w-44 h-44 rounded-full bg-white/10 pointer-events-none"></div>
+                <div class="absolute right-14 -top-10 w-24 h-24 rounded-full bg-white/5 pointer-events-none"></div>
+                <div class="flex items-start justify-between relative">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-medium text-blue-100">Total Saldo</span>
+                            <button onclick="toggleHide()" aria-label="Sembunyikan saldo" class="text-blue-100/90 text-xs active:scale-90 transition"><i id="eye-icon" class="fa-regular fa-eye"></i></button>
+                        </div>
+                        <div class="text-[28px] leading-tight font-extrabold tracking-tight mt-1" id="txt-total">Rp 0</div>
+                    </div>
+                    <button id="vault-btn" onclick="openVault()" aria-label="Atur saldo awal" class="w-12 h-12 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-xl active:scale-90 transition">
+                        <i class="fa-solid fa-vault"></i>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mt-5 relative">
+                    <div class="rounded-2xl bg-white/10 px-3 py-2.5">
+                        <div class="flex items-center space-x-1.5 text-[10px] text-blue-100"><i class="fa-solid fa-arrow-down text-emerald-300"></i><span>Pemasukan bulan ini</span></div>
+                        <p class="text-sm font-bold mt-0.5" id="txt-in">Rp 0</p>
+                    </div>
+                    <div class="rounded-2xl bg-white/10 px-3 py-2.5">
+                        <div class="flex items-center space-x-1.5 text-[10px] text-blue-100"><i class="fa-solid fa-arrow-up text-rose-300"></i><span>Pengeluaran bulan ini</span></div>
+                        <p class="text-sm font-bold mt-0.5" id="txt-out">Rp 0</p>
+                    </div>
+                </div>
+
+                <button id="empty-hint" onclick="openVault()" class="hidden relative mt-4 w-full text-left text-xs font-semibold bg-white text-blue-700 rounded-2xl px-4 py-3 items-center justify-between active:scale-[.98] transition">
+                    <span><i class="fa-solid fa-vault mr-2"></i>Mulai dengan mengisi saldo awal</span><i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+
+            <!-- Aksi cepat -->
+            <div class="grid grid-cols-4 gap-2 px-1">
+                <button onclick="quickAction('transfer')" class="flex flex-col items-center active:scale-95 transition">
+                    <div class="w-12 h-12 rounded-2xl bg-white shadow-sm shadow-slate-200/70 text-blue-600 flex items-center justify-center text-lg"><i class="fa-solid fa-right-left"></i></div>
+                    <span class="text-[11px] font-semibold text-slate-600 mt-1.5">Transfer</span>
+                </button>
+                <button onclick="quickAction('topup')" class="flex flex-col items-center active:scale-95 transition">
+                    <div class="w-12 h-12 rounded-2xl bg-white shadow-sm shadow-slate-200/70 text-blue-600 flex items-center justify-center text-lg"><i class="fa-solid fa-circle-plus"></i></div>
+                    <span class="text-[11px] font-semibold text-slate-600 mt-1.5">Top Up</span>
+                </button>
+                <button onclick="quickAction('pay')" class="flex flex-col items-center active:scale-95 transition">
+                    <div class="w-12 h-12 rounded-2xl bg-white shadow-sm shadow-slate-200/70 text-blue-600 flex items-center justify-center text-lg"><i class="fa-solid fa-cart-shopping"></i></div>
+                    <span class="text-[11px] font-semibold text-slate-600 mt-1.5">Bayar</span>
+                </button>
+                <button onclick="quickAction('income')" class="flex flex-col items-center active:scale-95 transition">
+                    <div class="w-12 h-12 rounded-2xl bg-white shadow-sm shadow-slate-200/70 text-blue-600 flex items-center justify-center text-lg"><i class="fa-solid fa-arrow-down"></i></div>
+                    <span class="text-[11px] font-semibold text-slate-600 mt-1.5">Terima</span>
+                </button>
+            </div>
+
+            <!-- Cash -->
+            <div class="bg-white rounded-3xl px-4 py-1 shadow-sm shadow-slate-200/70" id="card-cash"></div>
+
+            <!-- Bank (grid 3 kolom, maks 2 baris) -->
+            <div class="bg-white rounded-3xl px-3 pt-4 pb-3 shadow-sm shadow-slate-200/70">
+                <div class="flex items-center justify-between px-1 mb-2">
+                    <h2 class="text-sm font-bold text-slate-900">Rekening Bank</h2>
+                    <span class="text-xs font-semibold text-slate-500" id="sum-bank">Rp 0</span>
+                </div>
+                <div id="grid-bank"></div>
+            </div>
+
+            <!-- E-Wallet (grid 3 kolom, maks 2 baris) -->
+            <div class="bg-white rounded-3xl px-3 pt-4 pb-3 shadow-sm shadow-slate-200/70">
+                <div class="flex items-center justify-between px-1 mb-2">
+                    <h2 class="text-sm font-bold text-slate-900">E-Wallet</h2>
+                    <span class="text-xs font-semibold text-slate-500" id="sum-ewallet">Rp 0</span>
+                </div>
+                <div id="grid-ewallet"></div>
+            </div>
+
+            <!-- Tabungan -->
+            <div class="bg-white rounded-3xl px-4 py-1 shadow-sm shadow-slate-200/70" id="card-tabungan"></div>
+        </section>
+
+        <!-- TAB 2: RIWAYAT -->
+        <section id="tab-2" class="tab-content hidden flex flex-col space-y-3">
+            <div class="flex space-x-2 overflow-x-auto no-scrollbar -mx-5 px-5 pb-1" id="filter-chips"></div>
+            <div id="transaction-list" class="space-y-4"></div>
+        </section>
+
+        <!-- TAB 3: RINGKASAN -->
+        <section id="tab-3" class="tab-content hidden flex flex-col space-y-4">
+            <div class="bg-white rounded-3xl p-4 shadow-sm shadow-slate-200/70">
+                <p class="text-xs text-slate-400" id="sum-month">Bulan ini</p>
+                <div class="grid grid-cols-3 gap-2 mt-3 text-center">
+                    <div><p class="text-[10px] text-slate-400">Pemasukan</p><p class="text-sm font-bold text-emerald-600 mt-0.5" id="s-in">Rp 0</p></div>
+                    <div><p class="text-[10px] text-slate-400">Pengeluaran</p><p class="text-sm font-bold text-rose-600 mt-0.5" id="s-out">Rp 0</p></div>
+                    <div><p class="text-[10px] text-slate-400">Selisih</p><p class="text-sm font-bold text-slate-900 mt-0.5" id="s-net">Rp 0</p></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-3xl p-4 shadow-sm shadow-slate-200/70">
+                <h2 class="text-sm font-bold text-slate-900 mb-3">Komposisi Saldo</h2>
+                <div id="s-comp"></div>
+            </div>
+            <div class="bg-white rounded-3xl p-4 shadow-sm shadow-slate-200/70">
+                <h2 class="text-sm font-bold text-slate-900 mb-3">Pengeluaran per Kategori</h2>
+                <div id="s-cat" class="space-y-3"></div>
+            </div>
+            <div class="bg-white rounded-3xl p-4 shadow-sm shadow-slate-200/70">
+                <h2 class="text-sm font-bold text-slate-900 mb-3">Pengeluaran per Sumber</h2>
+                <div id="s-spend" class="space-y-3"></div>
+            </div>
+        </section>
+
+        <!-- TAB 4: LAINNYA -->
+        <section id="tab-4" class="tab-content hidden flex flex-col space-y-4">
+            <div class="bg-white rounded-3xl px-4 shadow-sm shadow-slate-200/70 divide-y divide-slate-100">
+                <button onclick="openVault()" class="w-full flex items-center py-4 active:opacity-60 transition">
+                    <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mr-3"><i class="fa-solid fa-vault"></i></div>
+                    <div class="flex-1 text-left"><p class="text-sm font-bold text-slate-900">Atur Saldo Awal</p><p class="text-[11px] text-slate-400">Tentukan saldo seluruh kas, tambah bank atau e-wallet</p></div>
+                    <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
+                </button>
+                <button onclick="resetAll()" class="w-full flex items-center py-4 active:opacity-60 transition">
+                    <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mr-3"><i class="fa-solid fa-rotate-left"></i></div>
+                    <div class="flex-1 text-left"><p class="text-sm font-bold text-slate-900">Reset Semua Data</p><p class="text-[11px] text-slate-400">Kembali ke saldo 0 dan hapus riwayat</p></div>
+                    <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
+                </button>
+                <button onclick="exportData()" class="w-full flex items-center py-4 active:opacity-60 transition">
+                    <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center mr-3"><i class="fa-solid fa-file-export"></i></div>
+                    <div class="flex-1 text-left"><p class="text-sm font-bold text-slate-900">Ekspor Data</p><p class="text-[11px] text-slate-400">Simpan saldo dan riwayat sebagai file JSON</p></div>
+                    <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
+                </button>
+                <button onclick="document.getElementById('import-file').click()" class="w-full flex items-center py-4 active:opacity-60 transition">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mr-3"><i class="fa-solid fa-file-import"></i></div>
+                    <div class="flex-1 text-left"><p class="text-sm font-bold text-slate-900">Impor Data</p><p class="text-[11px] text-slate-400">Pulihkan data dari file JSON cadangan</p></div>
+                    <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
+                </button>
+                <input id="import-file" type="file" accept=".json,application/json" class="hidden" onchange="importData(event)">
+            </div>
+        </section>
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-100 shadow-[0_-4px_20px_rgba(15,23,42,.06)]" style="padding-bottom: env(safe-area-inset-bottom)">
+        <div class="max-w-md mx-auto px-2 h-16 flex items-center justify-around relative">
+            <button onclick="switchTab(1)" id="nav-btn-1" class="nav-btn flex flex-col items-center justify-center w-1/5 h-full active:scale-95 transition">
+                <i class="fa-solid fa-house text-base mb-1"></i><span class="text-[10px] font-semibold">Beranda</span>
+            </button>
+            <button onclick="switchTab(2)" id="nav-btn-2" class="nav-btn flex flex-col items-center justify-center w-1/5 h-full active:scale-95 transition">
+                <i class="fa-solid fa-clock-rotate-left text-base mb-1"></i><span class="text-[10px] font-semibold">Riwayat</span>
+            </button>
+            <div class="w-1/5 flex justify-center relative -top-5">
+                <button onclick="openPicker('source')" aria-label="Transaksi" class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center shadow-xl shadow-blue-600/40 border-4 border-[#f3f5fa] active:scale-90 transition">
+                    <i class="fa-solid fa-wallet text-xl"></i>
+                </button>
+            </div>
+            <button onclick="switchTab(3)" id="nav-btn-3" class="nav-btn flex flex-col items-center justify-center w-1/5 h-full active:scale-95 transition">
+                <i class="fa-solid fa-chart-pie text-base mb-1"></i><span class="text-[10px] font-semibold">Ringkasan</span>
+            </button>
+            <button onclick="switchTab(4)" id="nav-btn-4" class="nav-btn flex flex-col items-center justify-center w-1/5 h-full active:scale-95 transition">
+                <i class="fa-solid fa-ellipsis text-base mb-1"></i><span class="text-[10px] font-semibold">Lainnya</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- PANEL TRANSAKSI -->
+    <div id="account-panel" class="panel fixed inset-0 z-50 hidden flex-col bg-[#f3f5fa] max-w-md mx-auto">
+        <div class="flex items-center px-4 h-14 shrink-0">
+            <button onclick="closeAccount()" aria-label="Kembali" class="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-600 active:scale-90 transition"><i class="fa-solid fa-arrow-left text-sm"></i></button>
+            <div class="ml-3">
+                <h2 class="text-[15px] font-extrabold text-slate-900 leading-tight" id="ap-title">Transaksi</h2>
+                <p class="text-[11px] text-slate-400" id="ap-sub"></p>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-5 pb-4 space-y-5">
+            <div id="mode-switch" class="flex space-x-2 overflow-x-auto no-scrollbar -mx-5 px-5 py-0.5"></div>
+
+            <div class="text-center pt-1">
+                <label class="text-xs font-semibold text-slate-400" id="lbl-nominal">Nominal</label>
+                <div class="flex items-center justify-center mt-1">
+                    <span class="text-2xl font-extrabold text-slate-300 mr-2">Rp</span>
+                    <input type="number" inputmode="numeric" id="acc-nominal" placeholder="0" oninput="onNominalInput()"
+                        class="w-48 text-center bg-transparent text-[40px] leading-tight font-extrabold text-slate-900 placeholder-slate-300 focus:outline-none">
+                </div>
+                <p class="text-xs mt-1 min-h-[16px]" id="nominal-hint"></p>
+                <div class="flex justify-center flex-wrap gap-1.5 mt-3">
+                    <button type="button" onclick="addQuick(10000)" class="px-3 py-1.5 text-[11px] font-bold bg-white rounded-full text-slate-600 shadow-sm active:scale-95 transition">+10rb</button>
+                    <button type="button" onclick="addQuick(50000)" class="px-3 py-1.5 text-[11px] font-bold bg-white rounded-full text-slate-600 shadow-sm active:scale-95 transition">+50rb</button>
+                    <button type="button" onclick="addQuick(100000)" class="px-3 py-1.5 text-[11px] font-bold bg-white rounded-full text-slate-600 shadow-sm active:scale-95 transition">+100rb</button>
+                    <button type="button" id="btn-all" onclick="setAll()" class="px-3 py-1.5 text-[11px] font-bold bg-blue-600 rounded-full text-white shadow-sm active:scale-95 transition">Semua saldo</button>
+                </div>
+            </div>
+
+            <div id="cat-wrap" class="hidden">
+                <p class="text-xs font-semibold text-slate-500 mb-2 px-1">Kategori</p>
+                <div class="flex flex-wrap gap-1.5" id="cat-chips"></div>
+            </div>
+
+            <div class="bg-white rounded-3xl px-4 shadow-sm shadow-slate-200/70" id="route-card"></div>
+
+            <div id="desc-wrap">
+                <label class="block text-xs font-semibold text-slate-500 mb-1.5 px-1" id="lbl-desc">Catatan (opsional)</label>
+                <input type="text" id="acc-desc" enterkeyhint="done" onkeydown="if(event.key==='Enter'){this.blur()}"
+                    class="w-full px-4 py-3.5 text-sm bg-white rounded-2xl shadow-sm shadow-slate-200/70 text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition">
+            </div>
+        </div>
+
+        <div class="px-5 pt-3 safe-b bg-[#f3f5fa] border-t border-slate-200/60 shrink-0">
+            <button id="cta" onclick="ctaClick()" class="w-full py-4 rounded-2xl text-white font-bold text-sm shadow-lg active:scale-[.98] transition flex items-center justify-center space-x-2"></button>
+            <p class="text-[10px] text-center text-slate-400 mt-2" id="acc-note"></p>
+        </div>
+    </div>
+
+    <!-- PANEL PILIH SALDO -->
+    <div id="picker-panel" class="panel fixed inset-0 z-[60] hidden flex-col bg-[#f3f5fa] max-w-md mx-auto">
+        <div class="flex items-center px-4 h-14 shrink-0">
+            <button onclick="closePicker()" aria-label="Kembali" class="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-600 active:scale-90 transition"><i class="fa-solid fa-arrow-left text-sm"></i></button>
+            <div class="ml-3">
+                <h2 class="text-[15px] font-extrabold text-slate-900 leading-tight" id="picker-title">Pilih Saldo</h2>
+                <p class="text-[11px] text-slate-400" id="picker-sub"></p>
+            </div>
+        </div>
+        <div class="px-5 pb-2 shrink-0" id="picker-search-wrap">
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-300 text-xs"></i>
+                <input id="picker-search" oninput="filterList('picker-list', this.value)" placeholder="Cari bank atau e-wallet"
+                    class="w-full pl-9 pr-3 py-3 text-sm bg-white rounded-2xl shadow-sm shadow-slate-200/70 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/40">
+            </div>
+        </div>
+        <div class="flex-1 overflow-y-auto px-5 pb-8 pt-1 space-y-4" id="picker-list"></div>
+    </div>
+
+    <!-- PANEL SALDO AWAL (BERANGKAS) -->
+    <div id="vault-panel" class="panel fixed inset-0 z-50 hidden flex-col bg-[#f3f5fa] max-w-md mx-auto">
+        <div class="flex items-center px-4 h-14 shrink-0">
+            <button onclick="closeVault()" aria-label="Kembali" class="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-600 active:scale-90 transition"><i class="fa-solid fa-arrow-left text-sm"></i></button>
+            <div class="ml-3">
+                <h2 class="text-[15px] font-extrabold text-slate-900 leading-tight">Saldo Awal Kas</h2>
+                <p class="text-[11px] text-slate-400">Hanya saldo di atas Rp 0 yang tampil di Beranda</p>
+            </div>
+        </div>
+        <div class="px-5 pb-2 shrink-0">
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-300 text-xs"></i>
+                <input id="vault-search" oninput="filterList('vault-list', this.value)" placeholder="Cari bank atau e-wallet"
+                    class="w-full pl-9 pr-3 py-3 text-sm bg-white rounded-2xl shadow-sm shadow-slate-200/70 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/40">
+            </div>
+        </div>
+        <div class="flex-1 overflow-y-auto px-5 pb-4 pt-1 space-y-4" id="vault-list"></div>
+        <div class="px-5 pt-3 safe-b bg-[#f3f5fa] border-t border-slate-200/60 shrink-0">
+            <div class="flex items-center justify-between mb-2.5 px-1">
+                <span class="text-xs font-semibold text-slate-500">Total Seluruh Kas</span>
+                <span class="text-base font-extrabold text-slate-900" id="vault-total">Rp 0</span>
+            </div>
+            <button onclick="saveVault()" class="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-600/30 active:scale-[.98] transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-check"></i><span>Simpan Saldo</span>
+            </button>
+            <p class="text-[10px] text-center text-slate-400 mt-2">Perubahan nominal dicatat di Riwayat sebagai saldo masuk atau koreksi.</p>
+        </div>
+    </div>
+
+    <script src="app.js" defer></script>
+    <script>
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+        }
+    </script>
+</body>
+</html>
